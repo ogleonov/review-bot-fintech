@@ -3,15 +3,15 @@ package main
 import (
 	"encoding/json"
 	"log"
+	"net/url"
 	"strings"
 
 	"github.com/mattermost/mattermost-server/v6/model"
 )
 
 func main() {
-	// Конфигурация
 	host := "http://mattermost-feature-sandbox.mattermost-ingress-controller.mattermost.k8s.dev-el" // Замените на ваш хост
-	token := "token"
+	token := "k5e44t9iipn9dfhdhatp4kui1a"
 
 	// Создаем клиента API
 	client := model.NewAPIv4Client(host)
@@ -24,11 +24,23 @@ func main() {
 	}
 	log.Printf("Бот авторизован как %s (@%s)", botUser.GetFullName(), botUser.Username)
 
-	// Явно создаем WebSocket URL
-	wsURL := "wss://" + strings.TrimPrefix(host, "https://") + "/api/v4/websocket"
+	// Правильно формируем URL для WebSocket
+	parsedURL, err := url.Parse(host)
+	if err != nil {
+		log.Fatalf("Ошибка парсинга URL: %v", err)
+	}
+
+	// Определяем протокол для WebSocket
+	wsScheme := "wss"
+	if parsedURL.Scheme == "http" {
+		wsScheme = "ws"
+	}
+
+	// Формируем правильный WebSocket URL
+	wsURL := wsScheme + "://" + parsedURL.Host + "/api/v4/websocket"
 	log.Printf("Подключаемся к WebSocket: %s", wsURL)
 
-	// Создаем WebSocket клиента с явным URL
+	// Создаем WebSocket клиента
 	wsClient, err := model.NewWebSocketClient(wsURL, token)
 	if err != nil {
 		log.Fatalf("Ошибка создания WebSocket клиента: %v", err)
